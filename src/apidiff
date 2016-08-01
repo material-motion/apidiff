@@ -1,0 +1,64 @@
+#!/bin/bash -e
+#
+# Copyright 2016-present The Material Motion Authors. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+usage() {
+  echo "apidiff <old version> <new version>"
+}
+
+clone_tmp() {
+  echo "$tmp_path"
+}
+
+# TODO: Parse args.
+if [[ -z "$1" || -z "$2" || -z "$3" ]]; then
+  usage
+  exit 1
+fi
+
+old_ref=$(git rev-list -n 1 "$1" -- 2> /dev/null || echo "")
+if [ -z "$old_ref" ]; then
+  echo "$1 is not a known ref."
+  exit 1
+fi
+
+new_ref=$(git rev-list -n 1 "$2" -- 2> /dev/null || echo "")
+if [ -z "$new_ref" ]; then
+  echo "$2 is not a known ref."
+  exit 1
+fi
+
+tmp_path=$(mktemp -d)
+old_path="$tmp_path/old"
+new_path="$tmp_path/new"
+
+git_root="$(git rev-parse --show-toplevel | tail -n1)"
+
+git clone "$git_root" "$old_path" -q || { echo "ERROR: Failed to clone."; exit 1; }
+pushd "$old_path" >> /dev/null
+git fetch -q || { echo "ERROR: Failed to update repo."; exit 1; }
+git checkout "$old_ref" -q
+popd >> /dev/null
+
+git clone "$git_root" "$new_path" -q || { echo "ERROR: Failed to clone."; exit 1; }
+pushd "$new_path" >> /dev/null
+git fetch -q || { echo "ERROR: Failed to update repo."; exit 1; }
+git checkout "$new_ref" -q
+popd >> /dev/null
+
+sourcekitten doc --objc "$old_path/$3" -- -x objective-c -isysroot $(xcrun --show-sdk-path) -I $(pwd) > "$tmp_path/old_apis"
+sourcekitten doc --objc "$new_path/$3" -- -x objective-c -isysroot $(xcrun --show-sdk-path) -I $(pwd) > "$tmp_path/new_apis"
+
+/Users/featherless/Library/Developer/Xcode/DerivedData/diffreport-akolryjzamegupfmlhykauxfmcvw/Build/Products/Debug/diffreport "$tmp_path/old_apis" "$tmp_path/new_apis"
