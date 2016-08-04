@@ -63,7 +63,7 @@ public func diffreport(oldApi: JSONObject, newApi: JSONObject) throws -> [String
 
   // Modifications
 
-  let ignoredKeys = Set(arrayLiteral: "key.doc.line", "key.parsed_scope.end", "key.parsed_scope.start", "key.doc.column")
+  let ignoredKeys = Set(arrayLiteral: "key.doc.line", "key.parsed_scope.end", "key.parsed_scope.start", "key.doc.column", "key.doc.comment")
 
   for usr in persistedApiNames {
     let oldApi = oldApiNameNodeMap[usr]!
