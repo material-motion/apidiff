@@ -114,17 +114,17 @@ apidiff_android() {
   make_clones
 
   pushd "$OLD_PATH" >> /dev/null
-  ./gradlew ":$library:build" &>/dev/null
+  ./gradlew ":$library:build" &>/dev/null || { echo "ERROR: Failed to build $OLD_COMMIT."; exit 1; }
   old_aar="$OLD_PATH/$library/build/outputs/aar/$library-debug.aar"
   popd >> /dev/null
 
   pushd "$NEW_PATH" >> /dev/null
-  ./gradlew ":$library:build" &>/dev/null
+  ./gradlew ":$library:build" &>/dev/null || { echo "ERROR: Failed to build $NEW_COMMIT."; exit 1; }
   new_aar="$NEW_PATH/$library/build/outputs/aar/$library-debug.aar"
   popd >> /dev/null
 
   echo_header "$@"
-  "$ROOT/third_party/jardiff/jardiff.py" "$old_aar" "$new_aar"
+  "$ROOT/third_party/jardiff/jardiff.py" "$old_aar" "$new_aar" "$ROOT/android/markdowndiff.py"
 }
 
 case "$ENGINE" in
