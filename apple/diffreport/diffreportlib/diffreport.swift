@@ -45,7 +45,7 @@ public func diffreport(oldApi: JSONObject, newApi: JSONObject) throws -> [String
 
   // Additions
 
-  for usr in (addedApiNames.map { usr in newApiNameNodeMap[usr]! }.sorted(isOrderedBefore: apiNodeIsOrderedBefore)) {
+  for usr in (addedApiNames.map { usr in newApiNameNodeMap[usr]! }.sorted(by: apiNodeIsOrderedBefore)) {
     let apiType = prettyString(forKind: usr["key.kind"] as! String)
     let name = prettyName(forApi: usr, apis: newApiNameNodeMap)
     let root = rootName(forApi: usr, apis: newApiNameNodeMap)
@@ -54,7 +54,7 @@ public func diffreport(oldApi: JSONObject, newApi: JSONObject) throws -> [String
 
   // Deletions
 
-  for usr in (deletedApiNames.map { usr in oldApiNameNodeMap[usr]! }.sorted(isOrderedBefore: apiNodeIsOrderedBefore)) {
+  for usr in (deletedApiNames.map { usr in oldApiNameNodeMap[usr]! }.sorted(by: apiNodeIsOrderedBefore)) {
     let apiType = prettyString(forKind: usr["key.kind"] as! String)
     let name = prettyName(forApi: usr, apis: oldApiNameNodeMap)
     let root = rootName(forApi: usr, apis: oldApiNameNodeMap)
@@ -151,7 +151,7 @@ extension Dictionary {
 
  Sorts by filename.
 
- Example usage: sorted(isOrderedBefore: apiNodeIsOrderedBefore)
+ Example usage: sorted(by: apiNodeIsOrderedBefore)
  */
 func apiNodeIsOrderedBefore(prev: APINode, next: APINode) -> Bool {
   return (prev["key.doc.file"] as! String) < (next["key.doc.file"] as! String)
