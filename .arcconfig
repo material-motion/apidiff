@@ -2,10 +2,24 @@
   "load": [
     ".arc-hooks/post-diff/arc-hook-github-issues",
     "third_party/arc-hook-conphig",
-    "third_party/arc-proselint"
+    "third_party/arc-jazzy-linter",
+    "third_party/arc-proselint",
+    "third_party/arc-xcode-test-engine",
+    "third_party/clang-format-linter"
   ],
   "arcanist_configuration": "HookConphig",
   "phabricator.uri": "http://codereview.cc/",
   "arc.land.onto.default": "develop",
-  "arc.feature.start.default": "origin/develop"
+  "arc.feature.start.default": "origin/develop",
+  "unit.xcode": {
+    "build": {
+      "workspace": "apple/diffreport.xcworkspace",
+      "scheme": "UnitTests",
+      "configuration": "Debug",
+      "destination": "platform=macOS"
+    },
+    "coverage": {
+      "product": "diffreportlib.framework/diffreportlib"
+    }
+  }
 }

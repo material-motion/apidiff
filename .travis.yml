@@ -1,0 +1,11 @@
+language: objective-c
+osx_image: xcode8
+sudo: false
+notifications:
+  email: false
+before_install:
+  - git clone https://github.com/phacility/arcanist.git
+  - git clone https://github.com/phacility/libphutil.git
+script:
+  - set -o pipefail
+  - arcanist/bin/arc unit --everything --trace

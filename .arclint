@@ -3,6 +3,17 @@
     "chmod": {
       "type": "chmod"
     },
+    "text": {
+      "type": "text",
+      "include": "(\\.(m|h|mm|md|swift)$)",
+      "exclude": [
+        "(/Pods/)"
+      ],
+      "severity": {
+        "3": "disabled",
+        "5": "disabled"
+      }
+    },
     "prose": {
       "type": "prose",
       "include": "(\\.(md)$)",
@@ -19,6 +30,15 @@
     "spelling": {
       "type": "spelling",
       "include": "(\\.(md)$)"
+    },
+    "clang-format": {
+      "type": "clang-format",
+      "include": "(\\.(m|h|mm)$)",
+      "exclude": "(/Pods/)"
+    },
+    "jazzy": {
+      "type": "jazzy",
+      "include": "(src/[^\/]+?\\.(h|swift)$)"
     }
   }
 }

@@ -7,3 +7,12 @@
 [submodule ".arc-hooks/post-diff/arc-hook-github-issues"]
 	path = .arc-hooks/post-diff/arc-hook-github-issues
 	url = https://github.com/material-foundation/arc-hook-github-issues.git
+[submodule "third_party/clang-format-linter"]
+	path = third_party/clang-format-linter
+	url = https://github.com/vhbit/clang-format-linter.git
+[submodule "third_party/arc-jazzy-linter"]
+	path = third_party/arc-jazzy-linter
+	url = https://github.com/google/arc-jazzy-linter.git
+[submodule "third_party/arc-xcode-test-engine"]
+	path = third_party/arc-xcode-test-engine
+	url = https://github.com/google/arc-xcode-test-engine.git
