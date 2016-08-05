@@ -18,4 +18,4 @@
 	url = https://github.com/google/arc-xcode-test-engine.git
 [submodule "third_party/jardiff"]
 	path = third_party/jardiff
-	url = https://github.com/material-motion/jardiff.git
+	url = https://github.com/JakeWharton/jardiff.git
