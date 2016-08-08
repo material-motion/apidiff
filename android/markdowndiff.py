@@ -9,6 +9,7 @@ from collections import defaultdict
 
 
 SymbolId = namedtuple('SymbolId', 'klass kind signature')
+Definition = namedtuple('Definition', 'full short')
 
 class Kind:
   KLASS, CONSTRUCTOR, FIELD, METHOD = range(1, 5)
@@ -35,7 +36,7 @@ def print_api_diff(temp_folder, old_path, new_path):
   _print_markdown(report)
 
 def _symbols_for_library(path):
-  '''Parses the library directory and returns a map of SymbolId to definition.
+  '''Parses the library directory and returns a map of SymbolId to Definition.
 
   Input library path contains:
       path
@@ -44,7 +45,7 @@ def _symbols_for_library(path):
        +-- Klass3
   '''
 
-  symbols = {} # { SymbolId: definition, ... }
+  symbols = {} # { SymbolId: Definition, ... }
   for directory, subdirectories, files in os.walk(path):
     for file in files:
       symbols.update(_symbols_for_klass(os.path.join(directory, file)))
@@ -52,7 +53,7 @@ def _symbols_for_library(path):
 
 
 def _symbols_for_klass(file):
-  '''Parses the class file and returns a map of SymbolId to definition.
+  '''Parses the class file and returns a map of SymbolId to Definition.
 
   Input class file contains:
       public class Klass1 {
@@ -62,7 +63,7 @@ def _symbols_for_klass(file):
       }
   '''
 
-  symbols = {} # { SymbolId: definition, ... }
+  symbols = {} # { SymbolId: Definition, ... }
   klass = None
   with open(file) as f:
     lines = f.readlines()
@@ -71,18 +72,18 @@ def _symbols_for_klass(file):
         # Class declaration end braces.
         continue
 
-      definition = line.strip()[:-1].strip()
-      (kind, signature) = _kind_and_signature_for_definition(definition)
+      full_definition = line.strip()[:-1].strip()
+      (kind, signature, short_definition) = _parse_full_definition(full_definition)
       if index == 0:
         # Class declaration.
-        klass = signature
+        klass = short_definition
 
-      symbols[SymbolId(klass, kind, signature)] = definition
+      symbols[SymbolId(klass, kind, signature)] = Definition(full_definition, short_definition)
   return symbols
 
 
-def _kind_and_signature_for_definition(definition):
-  '''Parses a symbol's definition string and returns the kind and signature of the symbol.'''
+def _parse_full_definition(full_definition):
+  '''Parses a symbol's full definition string and returns the (kind, signature, short_definition).'''
 
   modifiers = '(?:public\s+|protected\s+|private\s+|static\s+|abstract\s+|final\s+|native\s+|strictfp\s+|synchronized\s+|transient\s+|volatile\s+)+'
   klass_type = '(?:class|interface|enum)'
@@ -91,30 +92,32 @@ def _kind_and_signature_for_definition(definition):
   extends_implements = '.*'
 
   # Klass
-  match = re.match('%s%s\s+(\S+)%s' % (modifiers, klass_type, extends_implements), definition)
+  match = re.match('%s%s\s+(\S+)%s' % (modifiers, klass_type, extends_implements), full_definition)
   if match:
-    signature = match.group(1)
-    return (Kind.KLASS, signature)
+    signature = short_definition = match.group(1)
+    return (Kind.KLASS, signature, short_definition)
 
   # Method
-  match = re.match('%s%s(\S+\(.*\))%s' % (modifiers, object_type, throws), definition)
+  match = re.match('%s(%s(\S+\(.*\)))%s' % (modifiers, object_type, throws), full_definition)
   if match:
-    signature = match.group(1)
-    return (Kind.METHOD, signature)
+    signature = match.group(2)
+    short_definition = match.group(1)
+    return (Kind.METHOD, signature, short_definition)
 
   # Constructor
-  match = re.match('%s(\S+\(.*\))%s' % (modifiers, throws), definition)
+  match = re.match('%s(\S+\(.*\))%s' % (modifiers, throws), full_definition)
   if match:
-    signature = match.group(1)
-    return (Kind.CONSTRUCTOR, signature)
+    signature = short_definition = match.group(1)
+    return (Kind.CONSTRUCTOR, signature, short_definition)
 
   # Field
-  match = re.match('%s%s(\S+)' % (modifiers, object_type), definition)
+  match = re.match('%s(%s(\S+))' % (modifiers, object_type), full_definition)
   if match:
-    signature = match.group(1)
-    return (Kind.FIELD, signature)
+    signature = match.group(2)
+    short_definition = match.group(1)
+    return (Kind.FIELD, signature, short_definition)
 
-  raise Exception('Could not parse %s' % definition)
+  raise Exception('Could not parse %s' % full_definition)
 
 
 def _changes(old_symbols, new_symbols):
@@ -143,7 +146,7 @@ def _changes(old_symbols, new_symbols):
   for symbol_id in sorted(persisted):
     old_definition = old_symbols[symbol_id]
     new_definition = new_symbols[symbol_id]
-    if old_definition != new_definition:
+    if old_definition.full != new_definition.full:
       changes[symbol_id.klass].append(Modification(symbol_id, old_definition, new_definition))
 
   return changes
@@ -162,15 +165,15 @@ def _print_markdown(report):
 
 def _markdown_for_change(change):
   if isinstance(change, Addition):
-    return '*new* %s: %s' % (_markdown_for_kind(change), _markdown_for_signature(change))
+    return '*new* %s: %s' % (_markdown_for_kind(change), _markdown_for_short_definition(change))
   elif isinstance(change, Deletion):
-    return '*removed* %s: %s' % (_markdown_for_kind(change), _markdown_for_signature(change))
+    return '*removed* %s: %s' % (_markdown_for_kind(change), _markdown_for_short_definition(change))
   elif isinstance(change, Modification):
     return '\n'.join([
-      '*modified* %s: %s' % (_markdown_for_kind(change), _markdown_for_signature(change)),
+      '*modified* %s: %s' % (_markdown_for_kind(change), _markdown_for_short_definition(change)),
       '',
-      '| From: | %s |' % _markdown_for_old_definition(change),
-      '| To: | %s |' % _markdown_for_new_definition(change)
+      '| From: | %s |' % _markdown_for_old_full_definition(change),
+      '| To: | %s |' % _markdown_for_new_full_definition(change)
     ])
   raise Exception('Could not produce markdown for %s' % change)
 
@@ -188,18 +191,16 @@ def _markdown_for_kind(change):
   raise Exception('Could not produce kind markdown for %s' % change)
 
 
-def _markdown_for_signature(change):
-  signature = change.symbol_id.signature
-
-  return '`%s`' % _simplify(signature)
+def _markdown_for_short_definition(change):
+  return '`%s`' % _simplify(change.definition.short)
 
 
-def _markdown_for_old_definition(change):
-  return _simplify(change.old_definition)
+def _markdown_for_old_full_definition(change):
+  return _simplify(change.old_definition.full)
 
 
-def _markdown_for_new_definition(change):
-  return _simplify(change.new_definition)
+def _markdown_for_new_full_definition(change):
+  return _simplify(change.new_definition.full)
 
 
 def _simplify(string):
