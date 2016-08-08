@@ -85,12 +85,13 @@ def _kind_and_signature_for_definition(definition):
   '''Parses a symbol's definition string and returns the kind and signature of the symbol.'''
 
   modifiers = '(?:public\s+|protected\s+|private\s+|static\s+|abstract\s+|final\s+|native\s+|strictfp\s+|synchronized\s+|transient\s+|volatile\s+)+'
+  klass_type = '(?:class|interface|enum)'
   object_type = '.+?\s+' # Either the return value type or field type.
   throws = '.*'
   extends_implements = '.*'
 
   # Klass
-  match = re.match('%sclass\s+(\S+)%s' % (modifiers, extends_implements), definition)
+  match = re.match('%s%s\s+(\S+)%s' % (modifiers, klass_type, extends_implements), definition)
   if match:
     signature = match.group(1)
     return (Kind.KLASS, signature)
