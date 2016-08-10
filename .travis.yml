@@ -6,6 +6,9 @@ notifications:
 before_install:
   - git clone https://github.com/phacility/arcanist.git
   - git clone https://github.com/phacility/libphutil.git
+  - git clone --recursive https://github.com/material-foundation/material-arc-tools.git
 script:
   - set -o pipefail
   - arcanist/bin/arc unit --everything --trace
+after_success:
+  - bash <(curl -s https://codecov.io/bash)

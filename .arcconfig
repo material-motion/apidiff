@@ -1,11 +1,11 @@
 {
   "load": [
-    ".arc-hooks/post-diff/arc-hook-github-issues",
-    "third_party/arc-hook-conphig",
-    "third_party/arc-jazzy-linter",
-    "third_party/arc-proselint",
-    "third_party/arc-xcode-test-engine",
-    "third_party/clang-format-linter"
+    "material-arc-tools/third_party/arc-hook-conphig",
+    "material-arc-tools/third_party/arc-hook-github-issues",
+    "material-arc-tools/third_party/arc-jazzy-linter",
+    "material-arc-tools/third_party/arc-proselint",
+    "material-arc-tools/third_party/arc-xcode-test-engine",
+    "material-arc-tools/third_party/clang-format-linter"
   ],
   "arcanist_configuration": "HookConphig",
   "phabricator.uri": "http://codereview.cc/",
