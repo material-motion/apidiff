@@ -28,19 +28,19 @@ class UnitTests: XCTestCase {
   func testAddition() throws {
     let report = try generateReport(forOld: "", new: "@interface TestObject\n@end")
     XCTAssertEqual(report["TestObject"]!.count, 1)
-    XCTAssertEqual(report["TestObject"]!.first, ChangeType.Addition(apiType: "class", name: "`TestObject`"))
+    XCTAssertEqual(report["TestObject"]!.first, ApiChange.Addition(apiType: "class", name: "`TestObject`"))
   }
 
   func testDeletion() throws {
     let report = try generateReport(forOld: "@interface TestObject\n@end", new: "")
     XCTAssertEqual(report["TestObject"]!.count, 1)
-    XCTAssertEqual(report["TestObject"]!.first, ChangeType.Deletion(apiType: "class", name: "`TestObject`"))
+    XCTAssertEqual(report["TestObject"]!.first, ApiChange.Deletion(apiType: "class", name: "`TestObject`"))
   }
 
   func testModification() throws {
     let report = try generateReport(forOld: "/** Docs */\n@interface TestObject\n\n@property(nonatomic) id object;\n\n@end", new: "/** Docs */\n@interface TestObject\n\n@property(atomic) id object;\n\n@end")
     XCTAssertEqual(report["TestObject"]!.count, 1)
-    XCTAssertEqual(report["TestObject"]!.first, ChangeType.Modification(apiType: "property", name: "`object` in `TestObject`", modificationType: "declaration", from: "@property(nonatomic) id object", to: "@property(atomic) id object"))
+    XCTAssertEqual(report["TestObject"]!.first, ApiChange.Modification(apiType: "property", name: "`object` in `TestObject`", modificationType: "declaration", from: "@property(nonatomic) id object", to: "@property(atomic) id object"))
   }
 
   let oldPath = ProcessInfo.processInfo.environment["TMPDIR"]!.appending("old/Header.h")
@@ -55,7 +55,7 @@ class UnitTests: XCTestCase {
     }
   }
 
-  func generateReport(forOld old: String, new: String) throws -> [String: [ChangeType]] {
+  func generateReport(forOld old: String, new: String) throws -> [String: [ApiChange]] {
     try old.write(toFile: oldPath, atomically: true, encoding: String.Encoding.utf8)
     try new.write(toFile: newPath, atomically: true, encoding: String.Encoding.utf8)
     let oldApi = try runSourceKitten(withHeader: oldPath)

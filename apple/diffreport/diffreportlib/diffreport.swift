@@ -23,14 +23,14 @@ typealias APINode = [String: AnyObject]
 typealias ApiNameNodeMap = [String: APINode]
 
 /** A type of API change. */
-public enum ChangeType {
+public enum ApiChange {
   case Addition(apiType: String, name: String)
   case Deletion(apiType: String, name: String)
   case Modification(apiType: String, name: String, modificationType: String, from: String, to: String)
 }
 
 /** Generates an API diff report from two SourceKitten JSON outputs. */
-public func diffreport(oldApi: JSONObject, newApi: JSONObject) throws -> [String: [ChangeType]] {
+public func diffreport(oldApi: JSONObject, newApi: JSONObject) throws -> [String: [ApiChange]] {
   let oldApiNameNodeMap = extractAPINodeMap(from: oldApi as! [SourceKittenNode])
   let newApiNameNodeMap = extractAPINodeMap(from: newApi as! [SourceKittenNode])
 
@@ -41,7 +41,7 @@ public func diffreport(oldApi: JSONObject, newApi: JSONObject) throws -> [String
   let deletedApiNames = oldApiNames.subtracting(newApiNames)
   let persistedApiNames = oldApiNames.intersection(newApiNames)
 
-  var changes: [String: [ChangeType]] = [:]
+  var changes: [String: [ApiChange]] = [:]
 
   // Additions
 
@@ -91,7 +91,7 @@ public func diffreport(oldApi: JSONObject, newApi: JSONObject) throws -> [String
   return changes
 }
 
-extension ChangeType {
+extension ApiChange {
   public func toMarkdown() -> String {
     switch self {
     case .Addition(let apiType, let name):
@@ -111,9 +111,9 @@ extension ChangeType {
   }
 }
 
-extension ChangeType: Equatable {}
+extension ApiChange: Equatable {}
 
-public func == (left: ChangeType, right: ChangeType) -> Bool {
+public func == (left: ApiChange, right: ApiChange) -> Bool {
   switch (left, right) {
   case (let .Addition(apiType, name), let .Addition(apiType2, name2)):
     return apiType == apiType2 && name == name2
