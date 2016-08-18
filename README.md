@@ -1,6 +1,7 @@
 # API diff
 
 [![Build Status](https://travis-ci.org/material-motion/material-motion-apidiff.svg?branch=develop)](https://travis-ci.org/material-motion/material-motion-apidiff)
+[![codecov](https://codecov.io/gh/material-motion/material-motion-apidiff/branch/develop/graph/badge.svg)](https://codecov.io/gh/material-motion/material-motion-apidiff)
 
 An API diff tool for Objective-C, Swift, and Android code that outputs markdown.
 
