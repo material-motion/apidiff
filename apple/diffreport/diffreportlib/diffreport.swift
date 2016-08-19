@@ -16,10 +16,10 @@
 
 import Foundation
 
-public typealias JSONObject = AnyObject
+public typealias JSONObject = Any
 
-typealias SourceKittenNode = [String: AnyObject]
-typealias APINode = [String: AnyObject]
+typealias SourceKittenNode = [String: Any]
+typealias APINode = [String: Any]
 typealias ApiNameNodeMap = [String: APINode]
 
 /** A type of API change. */
@@ -205,7 +205,7 @@ func apiNode(from sourceKittenNode: SourceKittenNode) -> APINode {
   var data = sourceKittenNode
   data.removeValue(forKey: "key.substructure")
   for (key, value) in data {
-    data[key] = String(value)
+    data[key] = String(describing: value)
   }
   return data
 }
@@ -264,7 +264,7 @@ func extractAPINodeMap(from sourceKittenNode: SourceKittenNode, parentUsr: Strin
  @param header Absolute path to an umbrella header.
  */
 func runSourceKitten(withHeader header: String) throws -> JSONObject {
-  let task = Task()
+  let task = Process()
   task.launchPath = "/usr/bin/env"
   task.arguments = [
     "/usr/local/bin/sourcekitten",

@@ -17,20 +17,20 @@
 import Foundation
 import diffreportlib
 
-if Process.arguments.count < 3 {
+if ProcessInfo.processInfo.arguments.count < 3 {
   print("usage: diffreport <old sourcekitten output> <new sourcekitten output>")
   exit(1)
 }
 
 /** Load a file from disk, parse it as JSON, and return the result. */
-func readJsonObject(fromFilePath path: String) throws -> AnyObject {
+func readJsonObject(fromFilePath path: String) throws -> Any {
   let url = URL(fileURLWithPath: path)
   let options = JSONSerialization.ReadingOptions(rawValue: 0)
   return try JSONSerialization.jsonObject(with: Data(contentsOf: url), options: options)
 }
 
-let oldApi = try readJsonObject(fromFilePath: Process.arguments[1])
-let newApi = try readJsonObject(fromFilePath: Process.arguments[2])
+let oldApi = try readJsonObject(fromFilePath: ProcessInfo.processInfo.arguments[1])
+let newApi = try readJsonObject(fromFilePath: ProcessInfo.processInfo.arguments[2])
 
 let report = try diffreport(oldApi: oldApi, newApi: newApi)
 
