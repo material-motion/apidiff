@@ -7,9 +7,18 @@ import sys
 from collections import namedtuple
 from collections import defaultdict
 
-
+# Note: The components of SymbolId should be chosen such that if two SymbolIds
+# are not equal, then they should represent two legal symbols.
+#
+# One consequence of this rule is that you cannot have a separate
+# Kind.Klass vs Kind.Interface since that could represent
+# class Foo and interface Foo, which would be a name conflict.
 SymbolId = namedtuple('SymbolId', 'klass kind signature')
-Definition = namedtuple('Definition', 'full short')
+
+# Full definition is the entire public api with all decorations.
+# Short definition is usually the signature, plus useful human-useful
+# identifiers like the method return type, field type, or @ for annotations.
+Definition = namedtuple('Definition', 'full short kind_description')
 
 class Kind:
   KLASS, CONSTRUCTOR, FIELD, METHOD = range(1, 5)
@@ -73,12 +82,12 @@ def _symbols_for_klass(file):
         continue
 
       full_definition = line.strip()[:-1].strip()
-      (kind, signature, short_definition) = _parse_full_definition(full_definition)
+      (kind, signature, short_definition, kind_description) = _parse_full_definition(full_definition)
       if index == 0:
         # Class declaration.
-        klass = short_definition
+        klass = signature
 
-      symbols[SymbolId(klass, kind, signature)] = Definition(full_definition, short_definition)
+      symbols[SymbolId(klass, kind, signature)] = Definition(full_definition, short_definition, kind_description)
   return symbols
 
 
@@ -92,30 +101,38 @@ def _parse_full_definition(full_definition):
   extends_implements = '.*'
 
   # Klass
-  match = re.match('%s%s\s+(\S+)%s' % (modifiers, klass_type, extends_implements), full_definition)
+  match = re.match('%s(%s)\s+(\S+)(%s)' % (modifiers, klass_type, extends_implements), full_definition)
   if match:
-    signature = short_definition = match.group(1)
-    return (Kind.KLASS, signature, short_definition)
+    kind_description = match.group(1)
+    signature = short_definition = match.group(2)
+
+    # Special processing for annotations.
+    extends = match.group(3)
+    if kind_description == 'interface' and extends == ' extends java.lang.annotation.Annotation':
+      kind_description = 'annotation'
+      short_definition = '@%s' % signature
+
+    return (Kind.KLASS, signature, short_definition, kind_description)
 
   # Method
   match = re.match('%s(%s(\S+\(.*\)))%s' % (modifiers, object_type, throws), full_definition)
   if match:
     signature = match.group(2)
     short_definition = match.group(1)
-    return (Kind.METHOD, signature, short_definition)
+    return (Kind.METHOD, signature, short_definition, 'method')
 
   # Constructor
   match = re.match('%s(\S+\(.*\))%s' % (modifiers, throws), full_definition)
   if match:
     signature = short_definition = match.group(1)
-    return (Kind.CONSTRUCTOR, signature, short_definition)
+    return (Kind.CONSTRUCTOR, signature, short_definition, 'constructor')
 
   # Field
   match = re.match('%s(%s(\S+))' % (modifiers, object_type), full_definition)
   if match:
     signature = match.group(2)
     short_definition = match.group(1)
-    return (Kind.FIELD, signature, short_definition)
+    return (Kind.FIELD, signature, short_definition, 'field')
 
   raise Exception('Could not parse %s' % full_definition)
 
@@ -179,16 +196,7 @@ def _markdown_for_change(change):
 
 
 def _markdown_for_kind(change):
-  kind = change.symbol_id.kind
-  if kind == Kind.KLASS:
-    return 'class'
-  elif kind == Kind.CONSTRUCTOR:
-    return 'constructor'
-  elif kind == Kind.FIELD:
-    return 'field'
-  elif kind == Kind.METHOD:
-    return 'method'
-  raise Exception('Could not produce kind markdown for %s' % change)
+  return change.definition.kind_description
 
 
 def _markdown_for_short_definition(change):
@@ -213,7 +221,7 @@ def _simplify(string):
       public PerformerInstantiationException(Class<? extends Performer>, Exception)
   '''
 
-  boundaries = r'(\(|\)|\s|<|>|,)'
+  boundaries = r'(\(|\)|\s|<|>|,|@)'
   return ''.join([_simplify_token(token) for token in re.split(boundaries, string)])
 
 
