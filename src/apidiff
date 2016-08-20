@@ -103,7 +103,7 @@ apidiff_apple() {
   build/Build/Products/Release/diffreport.app/Contents/MacOS/diffreport "$TMP_PATH/old_apis" "$TMP_PATH/new_apis"
 }
 
-apidiff_android() {
+apidiff_java() {
   library="$1"
 
   if [[ -z "$library" ]]; then
@@ -111,26 +111,32 @@ apidiff_android() {
     exit 1
   fi
 
+  case "$ENGINE" in
+    android) artifact="$library/build/outputs/aar/$library-debug.aar" ;;
+    java)    artifact="$library/build/libs/$library.jar" ;;
+    *)       exit 1 ;;
+  esac
+
   make_clones
 
   pushd "$OLD_PATH" >> /dev/null
   ./gradlew ":$library:build" &>/dev/null || { echo "ERROR: Failed to build $OLD_COMMIT."; exit 1; }
-  old_aar="$OLD_PATH/$library/build/outputs/aar/$library-debug.aar"
+  old_artifact="$OLD_PATH/$artifact"
   popd >> /dev/null
 
   pushd "$NEW_PATH" >> /dev/null
   ./gradlew ":$library:build" &>/dev/null || { echo "ERROR: Failed to build $NEW_COMMIT."; exit 1; }
-  new_aar="$NEW_PATH/$library/build/outputs/aar/$library-debug.aar"
+  new_artifact="$NEW_PATH/$artifact"
   popd >> /dev/null
 
   echo_header "$@"
-  "$ROOT/third_party/jardiff/jardiff.py" "$old_aar" "$new_aar" "$ROOT/android/markdowndiff.py"
+  "$ROOT/third_party/jardiff/jardiff.py" "$old_artifact" "$new_artifact" "$ROOT/java/markdowndiff.py"
 }
 
 case "$ENGINE" in
-  apple)   apidiff_apple "${@:4}" ;;
-  android) apidiff_android "${@:4}" ;;
-  *)       usage ;;
+  apple)        apidiff_apple "${@:4}" ;;
+  android|java) apidiff_java "${@:4}" ;;
+  *)            usage ;;
 esac
 
 clean_clones
