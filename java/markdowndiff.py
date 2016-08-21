@@ -97,6 +97,7 @@ def _parse_full_definition(full_definition):
   visibility = '(?:public\s+|protected\s+|private\s+)?'
   modifiers = '(?:static\s+|abstract\s+|final\s+|native\s+|strictfp\s+|synchronized\s+|transient\s+|volatile\s+)*'
   klass_type = '(?:class|interface|enum)'
+  typed_parameter = '(?:<.*>\s+)?'
   object_type = '.+?\s+' # Either the return value type or field type.
   throws = '.*'
   extends_implements = '.*'
@@ -122,10 +123,15 @@ def _parse_full_definition(full_definition):
     return (Kind.CONSTRUCTOR, signature, short_definition, 'constructor')
 
   # Method
-  match = re.match('%s%s(%s(\S+\(.*\)))%s' % (visibility, modifiers, object_type, throws), full_definition)
+  # public static <T extends foo.bar.Foo<foo.bar.Bar>> void bind(T) throws java.lang.Exception;
+  match = re.match('%s%s(%s)(%s)(\S+\(.*\))%s' % (visibility, modifiers, typed_parameter, object_type, throws), full_definition)
   if match:
-    signature = match.group(2)
-    short_definition = match.group(1)
+    type_param = match.group(1)
+    return_type = match.group(2)
+    name_and_params = match.group(3)
+
+    signature = '%s%s' % (type_param, name_and_params)
+    short_definition = '%s%s%s' % (type_param, return_type, name_and_params)
     return (Kind.METHOD, signature, short_definition, 'method')
 
   # Field
