@@ -103,43 +103,62 @@ def _parse_full_definition(full_definition):
   extends_implements = '.*'
 
   # Klass
-  match = re.match('%s%s(%s)\s+(\S+)(%s)' % (visibility, modifiers, klass_type, extends_implements), full_definition)
+  # public abstract class foo.bar.Baz<T> extends qux.Quz
+  match = re.match('%s(%s)(%s)\s+(\S+)(%s)' % (visibility, modifiers, klass_type, extends_implements), full_definition)
   if match:
-    kind_description = match.group(1)
-    signature = short_definition = match.group(2)
+    kind_description = match.group(2)
+    signature = short_definition = match.group(3)
 
     # Special processing for annotations.
-    extends = match.group(3)
+    extends = match.group(4)
     if kind_description == 'interface' and extends == ' extends java.lang.annotation.Annotation':
       kind_description = 'annotation'
       short_definition = '@%s' % signature
 
+    modifier = match.group(1)
+    kind_description = '%s%s' % (modifier, kind_description)
+
     return (Kind.KLASS, signature, short_definition, kind_description)
 
   # Constructor
-  match = re.match('%s%s(\S+\(.*\))%s' % (visibility, modifiers, throws), full_definition)
+  match = re.match('%s(%s)(\S+\(.*\))%s' % (visibility, modifiers, throws), full_definition)
   if match:
-    signature = short_definition = match.group(1)
-    return (Kind.CONSTRUCTOR, signature, short_definition, 'constructor')
+    kind_description = 'constructor'
+    signature = short_definition = match.group(2)
+
+    modifier = match.group(1)
+    kind_description = '%s%s' % (modifier, kind_description)
+
+    return (Kind.CONSTRUCTOR, signature, short_definition, kind_description)
 
   # Method
   # public static <T extends foo.bar.Foo<foo.bar.Bar>> void bind(T) throws java.lang.Exception;
-  match = re.match('%s%s(%s)(%s)(\S+\(.*\))%s' % (visibility, modifiers, typed_parameter, object_type, throws), full_definition)
+  match = re.match('%s(%s)(%s)(%s)(\S+\(.*\))%s' % (visibility, modifiers, typed_parameter, object_type, throws), full_definition)
   if match:
-    type_param = match.group(1)
-    return_type = match.group(2)
-    name_and_params = match.group(3)
+    kind_description = 'method'
+    type_param = match.group(2)
+    return_type = match.group(3)
+    name_and_params = match.group(4)
 
     signature = '%s%s' % (type_param, name_and_params)
     short_definition = '%s%s%s' % (type_param, return_type, name_and_params)
-    return (Kind.METHOD, signature, short_definition, 'method')
+
+    modifier = match.group(1)
+    kind_description = '%s%s' % (modifier, kind_description)
+
+    return (Kind.METHOD, signature, short_definition, kind_description)
 
   # Field
-  match = re.match('%s%s(%s(\S+))' % (visibility, modifiers, object_type), full_definition)
+  match = re.match('%s(%s)(%s(\S+))' % (visibility, modifiers, object_type), full_definition)
   if match:
-    signature = match.group(2)
-    short_definition = match.group(1)
-    return (Kind.FIELD, signature, short_definition, 'field')
+    kind_description = 'field'
+    signature = match.group(3)
+    short_definition = match.group(2)
+
+    modifier = match.group(1)
+    kind_description = '%s%s' % (modifier, kind_description)
+
+    return (Kind.FIELD, signature, short_definition, kind_description)
 
   raise Exception('Could not parse %s' % full_definition)
 
