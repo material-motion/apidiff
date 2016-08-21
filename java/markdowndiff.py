@@ -94,14 +94,15 @@ def _symbols_for_klass(file):
 def _parse_full_definition(full_definition):
   '''Parses a symbol's full definition string and returns the (kind, signature, short_definition).'''
 
-  modifiers = '(?:public\s+|protected\s+|private\s+|static\s+|abstract\s+|final\s+|native\s+|strictfp\s+|synchronized\s+|transient\s+|volatile\s+)+'
+  visibility = '(?:public\s+|protected\s+|private\s+)?'
+  modifiers = '(?:static\s+|abstract\s+|final\s+|native\s+|strictfp\s+|synchronized\s+|transient\s+|volatile\s+)*'
   klass_type = '(?:class|interface|enum)'
   object_type = '.+?\s+' # Either the return value type or field type.
   throws = '.*'
   extends_implements = '.*'
 
   # Klass
-  match = re.match('%s(%s)\s+(\S+)(%s)' % (modifiers, klass_type, extends_implements), full_definition)
+  match = re.match('%s%s(%s)\s+(\S+)(%s)' % (visibility, modifiers, klass_type, extends_implements), full_definition)
   if match:
     kind_description = match.group(1)
     signature = short_definition = match.group(2)
@@ -114,21 +115,21 @@ def _parse_full_definition(full_definition):
 
     return (Kind.KLASS, signature, short_definition, kind_description)
 
+  # Constructor
+  match = re.match('%s%s(\S+\(.*\))%s' % (visibility, modifiers, throws), full_definition)
+  if match:
+    signature = short_definition = match.group(1)
+    return (Kind.CONSTRUCTOR, signature, short_definition, 'constructor')
+
   # Method
-  match = re.match('%s(%s(\S+\(.*\)))%s' % (modifiers, object_type, throws), full_definition)
+  match = re.match('%s%s(%s(\S+\(.*\)))%s' % (visibility, modifiers, object_type, throws), full_definition)
   if match:
     signature = match.group(2)
     short_definition = match.group(1)
     return (Kind.METHOD, signature, short_definition, 'method')
 
-  # Constructor
-  match = re.match('%s(\S+\(.*\))%s' % (modifiers, throws), full_definition)
-  if match:
-    signature = short_definition = match.group(1)
-    return (Kind.CONSTRUCTOR, signature, short_definition, 'constructor')
-
   # Field
-  match = re.match('%s(%s(\S+))' % (modifiers, object_type), full_definition)
+  match = re.match('%s%s(%s(\S+))' % (visibility, modifiers, object_type), full_definition)
   if match:
     signature = match.group(2)
     short_definition = match.group(1)
