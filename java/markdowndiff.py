@@ -73,7 +73,10 @@ def _symbols_for_klass(file):
   '''
 
   symbols = {} # { SymbolId: Definition, ... }
-  klass = None
+
+  klass_symbol_id = None
+  klass_definition = None
+
   with open(file) as f:
     lines = f.readlines()
     for index, line in enumerate(lines):
@@ -81,17 +84,24 @@ def _symbols_for_klass(file):
         # Class declaration end braces.
         continue
 
+      isKlass = index == 0
       full_definition = line.strip()[:-1].strip()
-      (kind, signature, short_definition, kind_description) = _parse_full_definition(full_definition)
-      if index == 0:
-        # Class declaration.
-        klass = signature
+      (kind, signature, short_definition, kind_description) = _parse_full_definition(full_definition, klass_symbol_id, klass_definition)
 
-      symbols[SymbolId(klass, kind, signature)] = Definition(full_definition, short_definition, kind_description)
+      klass_signature = signature if isKlass else klass_symbol_id.signature
+
+      symbol_id = SymbolId(klass_signature, kind, signature)
+      definition = Definition(full_definition, short_definition, kind_description)
+      symbols[symbol_id] = definition
+
+      if isKlass:
+        # Class declaration.
+        klass_symbol_id = symbol_id
+        klass_definition = definition
   return symbols
 
 
-def _parse_full_definition(full_definition):
+def _parse_full_definition(full_definition, klass_symbol_id, klass_definition):
   '''Parses a symbol's full definition string and returns the (kind, signature, short_definition).'''
 
   visibility = '(?:public\s+|protected\s+|private\s+)?'
@@ -144,6 +154,8 @@ def _parse_full_definition(full_definition):
     short_definition = '%s%s%s' % (type_param, return_type, name_and_params)
 
     modifier = match.group(1)
+    if klass_definition.kind_description in ('interface', 'annotation'):
+      modifier = re.sub('abstract\s+', '', modifier)
     kind_description = '%s%s' % (modifier, kind_description)
 
     return (Kind.METHOD, signature, short_definition, kind_description)
