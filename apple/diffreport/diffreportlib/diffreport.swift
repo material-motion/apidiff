@@ -173,11 +173,18 @@ func += (left: inout ApiNameNodeMap, right: ApiNameNodeMap) {
 
 func prettyString(forKind kind: String) -> String {
   switch kind {
+  // Objective-C
   case "sourcekitten.source.lang.objc.decl.protocol": return "protocol"
   case "sourcekitten.source.lang.objc.decl.typedef": return "typedef"
   case "sourcekitten.source.lang.objc.decl.method.instance": return "method"
   case "sourcekitten.source.lang.objc.decl.property": return "property"
   case "sourcekitten.source.lang.objc.decl.class": return "class"
+
+  // Swift
+  case "source.lang.swift.decl.function.method.instance": return "method"
+  case "source.lang.swift.decl.var.instance": return "var"
+  case "source.lang.swift.decl.class": return "class"
+
   default: return kind
   }
 }
@@ -243,6 +250,11 @@ func extractAPINodeMap(from sourceKittenNode: SourceKittenNode, parentUsr: Strin
   for (key, value) in sourceKittenNode {
     switch key {
     case "key.usr":
+      if let accessibility = sourceKittenNode["key.accessibility"] {
+        if accessibility as! String != "source.lang.swift.accessibility.public" {
+          continue
+        }
+      }
       var node = apiNode(from: sourceKittenNode)
 
       // Create a reference to the parent node
