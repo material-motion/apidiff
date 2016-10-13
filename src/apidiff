@@ -19,7 +19,8 @@ usage() {
   echo
   echo "Engine-specific invocations:"
   echo
-  echo "    apidiff <old git ref> <new git ref> apple <umbrella header>"
+  echo "    apidiff <old git ref> <new git ref> objc <umbrella header>"
+  echo "    apidiff <old git ref> <new git ref> swift <workspace path> <scheme name>"
   echo "    apidiff <old git ref> <new git ref> android <library>"
 }
 
@@ -79,7 +80,7 @@ echo_header() {
     echo
 }
 
-apidiff_apple() {
+apidiff_objc() {
   umbrella_header="$1"
 
   if [[ -z "$umbrella_header" ]]; then
@@ -98,6 +99,42 @@ apidiff_apple() {
 
   sourcekitten doc --objc "$OLD_PATH/$umbrella_header" -- -x objective-c -isysroot $(xcrun --show-sdk-path) -I $(pwd) | sed "s:$escaped_old_path\\\\/::g" > "$TMP_PATH/old_apis"
   sourcekitten doc --objc "$NEW_PATH/$umbrella_header" -- -x objective-c -isysroot $(xcrun --show-sdk-path) -I $(pwd) | sed "s:$escaped_new_path\\\\/::g" > "$TMP_PATH/new_apis"
+
+  echo_header "$@"
+  build/Build/Products/Release/diffreport.app/Contents/MacOS/diffreport "$TMP_PATH/old_apis" "$TMP_PATH/new_apis"
+}
+
+apidiff_swift() {
+  workspace_path="$1"
+  scheme_name="$2"
+
+  if [[ -z "$workspace_path" || -z "$scheme_name" ]]; then
+    usage
+    exit 1
+  fi
+
+  escaped_old_path=$(echo "$OLD_PATH" | sed "s:/:\\\\\\\\/:g")
+  escaped_new_path=$(echo "$NEW_PATH" | sed "s:/:\\\\\\\\/:g")
+
+  cd "$ROOT"
+
+  xcodebuild build -workspace apple/diffreport.xcworkspace/ -scheme diffreport -configuration Release -derivedDataPath build >> /dev/null
+
+  make_clones
+
+  if [ -f "$OLD_PATH/Podfile" ]; then
+    pushd "$OLD_PATH" >> /dev/null
+    pod install >> /dev/null 2> /dev/null
+    popd >> /dev/null
+  fi
+  sourcekitten doc -- -workspace "$OLD_PATH/$workspace_path" -scheme "$scheme_name" 2> /dev/null | sed "s:$escaped_old_path\\\\/::g" > "$TMP_PATH/old_apis"
+
+  if [ -f "$NEW_PATH/Podfile" ]; then
+    pushd "$NEW_PATH" >> /dev/null
+    pod install >> /dev/null 2> /dev/null
+    popd >> /dev/null
+  fi
+  sourcekitten doc -- -workspace "$NEW_PATH/$workspace_path" -scheme "$scheme_name" 2> /dev/null | sed "s:$escaped_new_path\\\\/::g" > "$TMP_PATH/new_apis"
 
   echo_header "$@"
   build/Build/Products/Release/diffreport.app/Contents/MacOS/diffreport "$TMP_PATH/old_apis" "$TMP_PATH/new_apis"
@@ -134,7 +171,8 @@ apidiff_java() {
 }
 
 case "$ENGINE" in
-  apple)        apidiff_apple "${@:4}" ;;
+  objc)         apidiff_objc "${@:4}" ;;
+  swift)        apidiff_swift "${@:4}" ;;
   android|java) apidiff_java "${@:4}" ;;
   *)            usage ;;
 esac
