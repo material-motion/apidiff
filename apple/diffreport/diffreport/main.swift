@@ -26,7 +26,12 @@ if ProcessInfo.processInfo.arguments.count < 3 {
 func readJsonObject(fromFilePath path: String) throws -> Any {
   let url = URL(fileURLWithPath: path)
   let options = JSONSerialization.ReadingOptions(rawValue: 0)
-  return try JSONSerialization.jsonObject(with: Data(contentsOf: url), options: options)
+  let data = try Data(contentsOf: url)
+  if data.count > 0 {
+    return try JSONSerialization.jsonObject(with: data, options: options)
+  } else {
+    return []
+  }
 }
 
 let oldApi = try readJsonObject(fromFilePath: ProcessInfo.processInfo.arguments[1])

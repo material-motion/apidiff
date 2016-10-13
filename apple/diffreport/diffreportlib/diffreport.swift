@@ -154,7 +154,10 @@ extension Dictionary {
  Example usage: sorted(by: apiNodeIsOrderedBefore)
  */
 func apiNodeIsOrderedBefore(prev: APINode, next: APINode) -> Bool {
-  return (prev["key.doc.file"] as! String) < (next["key.doc.file"] as! String)
+  if let prevFile = prev["key.doc.file"] as? String, let nextFile = next["key.doc.file"] as? String {
+    return prevFile < nextFile
+  }
+  return false
 }
 
 /** Union two dictionaries. */
