@@ -160,10 +160,14 @@ func apiNodeIsOrderedBefore(prev: APINode, next: APINode) -> Bool {
   return false
 }
 
-/** Union two dictionaries. */
-func += <K, V> (left: inout [K:V], right: [K:V]) {
+/** Union two dictionaries, preferring existing values if they possess a parent.usr key. */
+func += (left: inout ApiNameNodeMap, right: ApiNameNodeMap) {
   for (k, v) in right {
-    left.updateValue(v, forKey: k)
+    if left[k] == nil {
+      left.updateValue(v, forKey: k)
+    } else if let object = left[k], object["parent.usr"] == nil {
+      left.updateValue(v, forKey: k)
+    }
   }
 }
 
