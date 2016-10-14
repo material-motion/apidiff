@@ -257,6 +257,8 @@ func extractAPINodeMap(from sourceKittenNode: SourceKittenNode, parentUsr: Strin
         if accessibility as! String != "source.lang.swift.accessibility.public" {
           continue
         }
+      } else if let kind = sourceKittenNode["key.kind"] as? String, kind == "source.lang.swift.decl.extension" {
+        continue
       }
       var node = apiNode(from: sourceKittenNode)
 
