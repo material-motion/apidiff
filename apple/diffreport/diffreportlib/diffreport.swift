@@ -172,21 +172,24 @@ func += (left: inout ApiNameNodeMap, right: ApiNameNodeMap) {
 }
 
 func prettyString(forKind kind: String) -> String {
-  switch kind {
-  // Objective-C
-  case "sourcekitten.source.lang.objc.decl.protocol": return "protocol"
-  case "sourcekitten.source.lang.objc.decl.typedef": return "typedef"
-  case "sourcekitten.source.lang.objc.decl.method.instance": return "method"
-  case "sourcekitten.source.lang.objc.decl.property": return "property"
-  case "sourcekitten.source.lang.objc.decl.class": return "class"
+  if let pretty = [
+    // Objective-C
+    "sourcekitten.source.lang.objc.decl.protocol": "protocol",
+    "sourcekitten.source.lang.objc.decl.typedef": "typedef",
+    "sourcekitten.source.lang.objc.decl.method.instance": "method",
+    "sourcekitten.source.lang.objc.decl.property": "property",
+    "sourcekitten.source.lang.objc.decl.class": "class",
 
-  // Swift
-  case "source.lang.swift.decl.function.method.instance": return "method"
-  case "source.lang.swift.decl.var.instance": return "var"
-  case "source.lang.swift.decl.class": return "class"
-
-  default: return kind
+    // Swift
+    "source.lang.swift.decl.function.method.instance": "method",
+    "source.lang.swift.decl.var.instance": "var",
+    "source.lang.swift.decl.class": "class",
+    "source.lang.swift.decl.var.static": "static var",
+    "source.lang.swift.decl.enum": "enum"
+    ][kind] {
+    return pretty
   }
+  return kind
 }
 
 func prettyString(forModificationKind kind: String) -> String {
