@@ -42,6 +42,6 @@ let report = try diffreport(oldApi: oldApi, newApi: newApi)
 // Generate markdown output
 
 for (symbol, entries) in report {
-  print("## \(symbol)\n")
+  print("\n## \(symbol)\n")
   print(entries.map({ change in change.toMarkdown() }).joined(separator: "\n\n"))
 }
