@@ -1,0 +1,15 @@
+language: objective-c
+osx_image: xcode8
+sudo: false
+notifications:
+  email: false
+before_install:
+  - brew install sourcekitten
+  - git clone https://github.com/phacility/arcanist.git
+  - git clone https://github.com/phacility/libphutil.git
+  - git clone --recursive https://github.com/material-foundation/material-arc-tools.git
+script:
+  - set -o pipefail
+  - arcanist/bin/arc unit --everything --trace
+after_success:
+  - bash <(curl -s https://codecov.io/bash)
