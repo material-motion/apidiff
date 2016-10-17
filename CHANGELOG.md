@@ -1,3 +1,5 @@
-# release-candidate
+# 1.0.0
 
- TODO: Enumerate changes.
+Initial release.
+
+Supports Swift, Objective-C, and Android API diff generation.
