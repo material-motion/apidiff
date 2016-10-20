@@ -1,0 +1,142 @@
+#!/bin/bash -e
+#
+# Copyright 2016-present The Material Motion Authors. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+usage() {
+  echo "pathapidiff <old source path> <new source path> <engine> <engine args...>"
+  echo
+  echo "Engine-specific invocations:"
+  echo
+  echo "    pathapidiff <old source path> <new source path> objc <umbrella header>"
+  echo "    pathapidiff <old source path> <new source path> swift <workspace path> <scheme name>"
+  echo "    pathapidiff <old source path> <new source path> android <library>"
+}
+
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+ROOT=$(cd "$DIR/.." && pwd)
+
+OLD_PATH="$1"
+NEW_PATH="$2"
+ENGINE="$3"
+
+if [[ -z "$OLD_PATH" || -z "$NEW_PATH" || -z "$ENGINE" ]]; then
+  usage
+  exit 1
+fi
+
+if [ ! -d "$OLD_PATH" ]; then
+  echo "$OLD_PATH is not a valid folder."
+  exit 1
+fi
+
+if [ ! -d "$NEW_PATH" ]; then
+  echo "$NEW_PATH is not a valid folder."
+  exit 1
+fi
+
+TMP_PATH=$(mktemp -d)
+ERROR_LOG="$TMP_PATH/error.log"
+
+apidiff_objc() {
+  umbrella_header="$1"
+
+  if [[ -z "$umbrella_header" ]]; then
+    usage
+    exit 1
+  fi
+
+  escaped_old_path=$(echo "$OLD_PATH" | sed "s:/:\\\\\\\\/:g")
+  escaped_new_path=$(echo "$NEW_PATH" | sed "s:/:\\\\\\\\/:g")
+
+  cd "$ROOT"
+
+  xcodebuild build -workspace apple/diffreport.xcworkspace/ -scheme diffreport -configuration Release -derivedDataPath build >> /dev/null
+
+  sourcekitten doc --objc "$OLD_PATH/$umbrella_header" -- -x objective-c -isysroot $(xcrun --show-sdk-path) -I $(pwd) 2>> "$ERROR_LOG" | sed "s:$escaped_old_path\\\\/::g" > "$TMP_PATH/old_apis"
+  sourcekitten doc --objc "$NEW_PATH/$umbrella_header" -- -x objective-c -isysroot $(xcrun --show-sdk-path) -I $(pwd) 2>> "$ERROR_LOG" | sed "s:$escaped_new_path\\\\/::g" > "$TMP_PATH/new_apis"
+
+  build/Build/Products/Release/diffreport.app/Contents/MacOS/diffreport "$TMP_PATH/old_apis" "$TMP_PATH/new_apis"
+}
+
+apidiff_swift() {
+  workspace_path="$1"
+  scheme_name="$2"
+
+  if [[ -z "$workspace_path" || -z "$scheme_name" ]]; then
+    usage
+    exit 1
+  fi
+
+  escaped_old_path=$(echo "$OLD_PATH" | sed "s:/:\\\\\\\\/:g")
+  escaped_new_path=$(echo "$NEW_PATH" | sed "s:/:\\\\\\\\/:g")
+
+  cd "$ROOT"
+
+  xcodebuild build -workspace apple/diffreport.xcworkspace/ -scheme diffreport -configuration Release -derivedDataPath build >> /dev/null
+
+  if [ -f "$OLD_PATH/Podfile" ]; then
+    pushd "$OLD_PATH" >> /dev/null
+    pod install >> /dev/null 2> /dev/null
+    popd >> /dev/null
+  fi
+  sourcekitten doc -- -workspace "$OLD_PATH/$workspace_path" -scheme "$scheme_name" 2>> "$ERROR_LOG" | sed "s:$escaped_old_path\\\\/::g" > "$TMP_PATH/old_apis"
+
+  if [ -f "$NEW_PATH/Podfile" ]; then
+    pushd "$NEW_PATH" >> /dev/null
+    pod install >> /dev/null 2> /dev/null
+    popd >> /dev/null
+  fi
+  sourcekitten doc -- -workspace "$NEW_PATH/$workspace_path" -scheme "$scheme_name" 2>> "$ERROR_LOG" | sed "s:$escaped_new_path\\\\/::g" > "$TMP_PATH/new_apis"
+
+  build/Build/Products/Release/diffreport.app/Contents/MacOS/diffreport "$TMP_PATH/old_apis" "$TMP_PATH/new_apis"
+}
+
+apidiff_java() {
+  library="$1"
+
+  if [[ -z "$library" ]]; then
+    usage
+    exit 1
+  fi
+
+  case "$ENGINE" in
+    android) artifact="$library/build/outputs/aar/$library-debug.aar" ;;
+    java)    artifact="$library/build/libs/$library.jar" ;;
+    *)       exit 1 ;;
+  esac
+
+  pushd "$OLD_PATH" >> /dev/null
+  ./gradlew ":$library:build" &>/dev/null || { echo "ERROR: Failed to build $OLD_COMMIT."; exit 1; }
+  old_artifact="$OLD_PATH/$artifact"
+  popd >> /dev/null
+
+  pushd "$NEW_PATH" >> /dev/null
+  ./gradlew ":$library:build" &>/dev/null || { echo "ERROR: Failed to build $NEW_COMMIT."; exit 1; }
+  new_artifact="$NEW_PATH/$artifact"
+  popd >> /dev/null
+
+  "$ROOT/third_party/jardiff/jardiff.py" "$old_artifact" "$new_artifact" "$ROOT/java/markdowndiff.py"
+}
+
+case "$ENGINE" in
+  objc)         apidiff_objc "${@:4}" ;;
+  swift)        apidiff_swift "${@:4}" ;;
+  android|java) apidiff_java "${@:4}" ;;
+  *)            usage ;;
+esac
+
+if [ -f "$ERROR_LOG" ]; then
+  >&2 echo "stderr output is available in $ERROR_LOG"
+fi
