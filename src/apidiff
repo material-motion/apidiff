@@ -49,19 +49,20 @@ if [ -z "$NEW_REF" ]; then
 fi
 
 TMP_PATH=$(mktemp -d)
+ERROR_LOG="$TMP_PATH/error.log"
 OLD_PATH="$TMP_PATH/old"
 NEW_PATH="$TMP_PATH/new"
 
 GIT_ROOT="$(git rev-parse --show-toplevel | tail -n1)"
 
 make_clones() {
-  git clone "$GIT_ROOT" "$OLD_PATH" -q || { echo "ERROR: Failed to clone."; exit 1; }
+  git clone "$GIT_ROOT" "$OLD_PATH" -q 2>> "$ERROR_LOG" || { echo "ERROR: Failed to clone."; exit 1; }
   pushd "$OLD_PATH" >> /dev/null
   git fetch -q || { echo "ERROR: Failed to update repo."; exit 1; }
   git checkout "$OLD_REF" -q
   popd >> /dev/null
 
-  git clone "$GIT_ROOT" "$NEW_PATH" -q || { echo "ERROR: Failed to clone."; exit 1; }
+  git clone "$GIT_ROOT" "$NEW_PATH" -q 2>> "$ERROR_LOG" || { echo "ERROR: Failed to clone."; exit 1; }
   pushd "$NEW_PATH" >> /dev/null
   git fetch -q || { echo "ERROR: Failed to update repo."; exit 1; }
   git checkout "$NEW_REF" -q
@@ -97,8 +98,8 @@ apidiff_objc() {
 
   make_clones
 
-  sourcekitten doc --objc "$OLD_PATH/$umbrella_header" -- -x objective-c -isysroot $(xcrun --show-sdk-path) -I $(pwd) | sed "s:$escaped_old_path\\\\/::g" > "$TMP_PATH/old_apis"
-  sourcekitten doc --objc "$NEW_PATH/$umbrella_header" -- -x objective-c -isysroot $(xcrun --show-sdk-path) -I $(pwd) | sed "s:$escaped_new_path\\\\/::g" > "$TMP_PATH/new_apis"
+  sourcekitten doc --objc "$OLD_PATH/$umbrella_header" -- -x objective-c -isysroot $(xcrun --show-sdk-path) -I $(pwd) 2>> "$ERROR_LOG" | sed "s:$escaped_old_path\\\\/::g" > "$TMP_PATH/old_apis"
+  sourcekitten doc --objc "$NEW_PATH/$umbrella_header" -- -x objective-c -isysroot $(xcrun --show-sdk-path) -I $(pwd) 2>> "$ERROR_LOG" | sed "s:$escaped_new_path\\\\/::g" > "$TMP_PATH/new_apis"
 
   echo_header "$@"
   build/Build/Products/Release/diffreport.app/Contents/MacOS/diffreport "$TMP_PATH/old_apis" "$TMP_PATH/new_apis"
@@ -127,14 +128,14 @@ apidiff_swift() {
     pod install >> /dev/null 2> /dev/null
     popd >> /dev/null
   fi
-  sourcekitten doc -- -workspace "$OLD_PATH/$workspace_path" -scheme "$scheme_name" 2> /dev/null | sed "s:$escaped_old_path\\\\/::g" > "$TMP_PATH/old_apis"
+  sourcekitten doc -- -workspace "$OLD_PATH/$workspace_path" -scheme "$scheme_name" 2>> "$ERROR_LOG" | sed "s:$escaped_old_path\\\\/::g" > "$TMP_PATH/old_apis"
 
   if [ -f "$NEW_PATH/Podfile" ]; then
     pushd "$NEW_PATH" >> /dev/null
     pod install >> /dev/null 2> /dev/null
     popd >> /dev/null
   fi
-  sourcekitten doc -- -workspace "$NEW_PATH/$workspace_path" -scheme "$scheme_name" 2> /dev/null | sed "s:$escaped_new_path\\\\/::g" > "$TMP_PATH/new_apis"
+  sourcekitten doc -- -workspace "$NEW_PATH/$workspace_path" -scheme "$scheme_name" 2>> "$ERROR_LOG" | sed "s:$escaped_new_path\\\\/::g" > "$TMP_PATH/new_apis"
 
   echo_header "$@"
   build/Build/Products/Release/diffreport.app/Contents/MacOS/diffreport "$TMP_PATH/old_apis" "$TMP_PATH/new_apis"
@@ -178,3 +179,7 @@ case "$ENGINE" in
 esac
 
 clean_clones
+
+if [ -f "$ERROR_LOG" ]; then
+  >&2 echo "stderr output is available in $ERROR_LOG"
+fi
