@@ -7,10 +7,10 @@ An API diff tool for Objective-C, Swift, and Android code that outputs markdown.
 
 ## Requirements
 
-Engine for apple APIs requires:
+Objective-C and Swift engines both require:
 
 - Xcode 8
-- [sourcekitten](https://github.com/jpsim/SourceKitten)
+- [SourceKitten](https://github.com/jpsim/SourceKitten)
 
 ## Usage
 
