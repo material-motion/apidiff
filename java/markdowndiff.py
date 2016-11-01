@@ -233,12 +233,22 @@ def _markdown_for_change(change):
   raise Exception('Could not produce markdown for %s' % change)
 
 
+def _definition(change):
+  if isinstance(change, Addition):
+    return change.definition
+  elif isinstance(change, Deletion):
+    return change.definition
+  elif isinstance(change, Modification):
+    return change.old_definition
+  raise Exception('Could not produce definition for %s' % change)
+
+
 def _markdown_for_kind(change):
-  return change.definition.kind_description
+  return _definition(change).kind_description
 
 
 def _markdown_for_short_definition(change):
-  return '`%s`' % _simplify(change.definition.short)
+  return '`%s`' % _simplify(_definition(change).short)
 
 
 def _markdown_for_old_full_definition(change):
