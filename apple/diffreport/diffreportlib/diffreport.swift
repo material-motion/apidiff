@@ -188,7 +188,8 @@ func prettyString(forKind kind: String) -> String {
     "source.lang.swift.decl.var.instance": "var",
     "source.lang.swift.decl.class": "class",
     "source.lang.swift.decl.var.static": "static var",
-    "source.lang.swift.decl.enum": "enum"
+    "source.lang.swift.decl.enum": "enum",
+    "source.lang.swift.decl.function.free": "function"
     ][kind] {
     return pretty
   }
