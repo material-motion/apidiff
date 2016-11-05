@@ -182,6 +182,10 @@ func prettyString(forKind kind: String) -> String {
     "sourcekitten.source.lang.objc.decl.constant": "constant",
     "sourcekitten.source.lang.objc.decl.enum": "enum",
     "sourcekitten.source.lang.objc.decl.enumcase": "enum value",
+    "sourcekitten.source.lang.objc.decl.category": "category",
+    "sourcekitten.source.lang.objc.decl.method.class": "class method",
+    "sourcekitten.source.lang.objc.decl.struct": "struct",
+    "sourcekitten.source.lang.objc.decl.field": "field",
 
     // Swift
     "source.lang.swift.decl.function.method.instance": "method",
