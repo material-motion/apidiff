@@ -20,7 +20,7 @@ usage() {
   echo "Engine-specific invocations:"
   echo
   echo "    pathapidiff <old source path> <new source path> objc <umbrella header>"
-  echo "    pathapidiff <old source path> <new source path> swift <workspace path> <scheme name>"
+  echo "    pathapidiff <old source path> <new source path> swift <workspace path> <module name>"
   echo "    pathapidiff <old source path> <new source path> android <library>"
 }
 
@@ -72,9 +72,9 @@ apidiff_objc() {
 
 apidiff_swift() {
   workspace_path="$1"
-  scheme_name="$2"
+  module_name="$2"
 
-  if [[ -z "$workspace_path" || -z "$scheme_name" ]]; then
+  if [[ -z "$workspace_path" || -z "$module_name" ]]; then
     usage
     exit 1
   fi
@@ -83,7 +83,6 @@ apidiff_swift() {
   escaped_new_path=$(echo "$NEW_PATH" | sed "s:/:\\\\\\\\/:g")
 
   cd "$ROOT"
-
   xcodebuild build -workspace apple/diffreport.xcworkspace/ -scheme diffreport -configuration Release -derivedDataPath build >> /dev/null
 
   if [ -f "$OLD_PATH/Podfile" ]; then
@@ -91,14 +90,32 @@ apidiff_swift() {
     pod install >> /dev/null 2> /dev/null
     popd >> /dev/null
   fi
-  sourcekitten doc -- -workspace "$OLD_PATH/$workspace_path" -scheme "$scheme_name" 2>> "$ERROR_LOG" | sed "s:$escaped_old_path\\\\/::g" > "$TMP_PATH/old_apis"
+
+  if [ -d "$OLD_PATH/$workspace_path" ]; then
+    if [[ $(xcodebuild build -workspace "$OLD_PATH/$workspace_path" -list | grep "$module_name" | tail -n +2 | wc -l) -ge "1" ]]; then
+      scheme_name=$(xcodebuild build -workspace "$OLD_PATH/$workspace_path" -list | grep "$module_name-lib" | head -n 1)
+    else
+      scheme_name=$(xcodebuild build -workspace "$OLD_PATH/$workspace_path" -list | grep "$module_name" | tail -n +2)
+    fi
+  
+    sourcekitten doc --module-name "$module_name" -- -workspace "$OLD_PATH/$workspace_path" -scheme ""$scheme_name"" 2>> "$ERROR_LOG" | sed "s:$escaped_old_path\\\\/::g" > "$TMP_PATH/old_apis"
+  else
+    touch "$TMP_PATH/old_apis"
+  fi
 
   if [ -f "$NEW_PATH/Podfile" ]; then
     pushd "$NEW_PATH" >> /dev/null
     pod install >> /dev/null 2> /dev/null
     popd >> /dev/null
   fi
-  sourcekitten doc -- -workspace "$NEW_PATH/$workspace_path" -scheme "$scheme_name" 2>> "$ERROR_LOG" | sed "s:$escaped_new_path\\\\/::g" > "$TMP_PATH/new_apis"
+
+  if [[ $(xcodebuild build -workspace "$NEW_PATH/$workspace_path" -list | grep "$module_name" | tail -n +2 | wc -l) -ge "1" ]]; then
+    scheme_name=$(xcodebuild build -workspace "$NEW_PATH/$workspace_path" -list | grep "$module_name-lib" | head -n 1)
+  else
+    scheme_name=$(xcodebuild build -workspace "$NEW_PATH/$workspace_path" -list | grep "$module_name" | tail -n +2)
+  fi
+
+  sourcekitten doc --module-name "$module_name" -- -workspace "$NEW_PATH/$workspace_path" -scheme ""$scheme_name"" 2>> "$ERROR_LOG" | sed "s:$escaped_new_path\\\\/::g" > "$TMP_PATH/new_apis"
 
   build/Build/Products/Release/diffreport.app/Contents/MacOS/diffreport "$TMP_PATH/old_apis" "$TMP_PATH/new_apis"
 }
