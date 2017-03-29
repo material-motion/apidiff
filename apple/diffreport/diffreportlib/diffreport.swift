@@ -213,8 +213,8 @@ func prettyString(forModificationKind kind: String) -> String {
 /** Walk the APINode to the root node. */
 func rootName(forApi api: APINode, apis: ApiNameNodeMap) -> String {
   let name = api["key.name"] as! String
-  if let parentUsr = api["parent.usr"] as? String {
-    return rootName(forApi: apis[parentUsr]!, apis: apis)
+  if let parentUsr = api["parent.usr"] as? String, let parentApi = apis[parentUsr] {
+    return rootName(forApi: parentApi, apis: apis)
   }
   return name
 }
