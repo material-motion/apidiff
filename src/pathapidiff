@@ -92,12 +92,16 @@ apidiff_swift() {
   fi
 
   if [ -d "$OLD_PATH/$workspace_path" ]; then
-    if [[ $(xcodebuild build -workspace "$OLD_PATH/$workspace_path" -list | grep "$module_name" | tail -n +2 | wc -l) -ge "1" ]]; then
-      scheme_name=$(xcodebuild build -workspace "$OLD_PATH/$workspace_path" -list | grep "$module_name-lib" | head -n 1)
-    else
-      scheme_name=$(xcodebuild build -workspace "$OLD_PATH/$workspace_path" -list | grep "$module_name" | tail -n +2)
+    scheme_name=$(xcodebuild build -workspace "$OLD_PATH/$workspace_path" -list | grep "$module_name\\b" | tail -n +2)
+
+    if [[ -z "$scheme_name" ]]; then
+      echo "Couldn't find scheme $module_name. Here's what we found:"
+      xcodebuild build -workspace "$OLD_PATH/$workspace_path" -list
+      echo "Filtering down gave us this list:"
+      xcodebuild build -workspace "$OLD_PATH/$workspace_path" -list | grep "$module_name\\b" | tail -n +2
+      exit 1
     fi
-  
+
     sourcekitten doc --module-name "$module_name" -- -workspace "$OLD_PATH/$workspace_path" -scheme ""$scheme_name"" 2>> "$ERROR_LOG" | sed "s:$escaped_old_path\\\\/::g" > "$TMP_PATH/old_apis"
   else
     touch "$TMP_PATH/old_apis"
@@ -109,10 +113,14 @@ apidiff_swift() {
     popd >> /dev/null
   fi
 
-  if [[ $(xcodebuild build -workspace "$NEW_PATH/$workspace_path" -list | grep "$module_name" | tail -n +2 | wc -l) -ge "1" ]]; then
-    scheme_name=$(xcodebuild build -workspace "$NEW_PATH/$workspace_path" -list | grep "$module_name-lib" | head -n 1)
-  else
-    scheme_name=$(xcodebuild build -workspace "$NEW_PATH/$workspace_path" -list | grep "$module_name" | tail -n +2)
+  scheme_name=$(xcodebuild build -workspace "$NEW_PATH/$workspace_path" -list | grep "$module_name\\b" | tail -n +2)
+
+  if [[ -z "$scheme_name" ]]; then
+    echo "Couldn't find scheme $module_name. Here's what we found:"
+    xcodebuild build -workspace "$NEW_PATH/$workspace_path" -list
+    echo "Filtering down gave us this list:"
+    xcodebuild build -workspace "$NEW_PATH/$workspace_path" -list | grep "$module_name\\b" | tail -n +2
+    exit 1
   fi
 
   sourcekitten doc --module-name "$module_name" -- -workspace "$NEW_PATH/$workspace_path" -scheme ""$scheme_name"" 2>> "$ERROR_LOG" | sed "s:$escaped_new_path\\\\/::g" > "$TMP_PATH/new_apis"
