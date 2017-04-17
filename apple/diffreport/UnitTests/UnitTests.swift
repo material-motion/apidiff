@@ -40,7 +40,7 @@ class UnitTests: XCTestCase {
   func testModification() throws {
     let report = try generateReport(forOld: "/** Docs */\n@interface TestObject\n\n@property(nonatomic) id object;\n\n@end", new: "/** Docs */\n@interface TestObject\n\n@property(atomic) id object;\n\n@end")
     XCTAssertEqual(report["TestObject"]!.count, 1)
-    XCTAssertEqual(report["TestObject"]!.first, ApiChange.Modification(apiType: "property", name: "`object` in `TestObject`", modificationType: "declaration", from: "@property(nonatomic) id object", to: "@property(atomic) id object"))
+    XCTAssertEqual(report["TestObject"]!.first!, ApiChange.Modification(apiType: "property", name: "`object` in `TestObject`", modificationType: "Declaration", from: "@property(nonatomic) id object", to: "@property(atomic) id object"))
   }
 
   let oldPath = ProcessInfo.processInfo.environment["TMPDIR"]!.appending("old/Header.h")

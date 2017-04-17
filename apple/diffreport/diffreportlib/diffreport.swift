@@ -63,7 +63,7 @@ public func diffreport(oldApi: JSONObject, newApi: JSONObject) throws -> [String
 
   // Modifications
 
-  let ignoredKeys = Set(arrayLiteral: "key.doc.line", "key.parsed_scope.end", "key.parsed_scope.start", "key.doc.column", "key.doc.comment")
+  let ignoredKeys = Set(arrayLiteral: "key.doc.line", "key.parsed_scope.end", "key.parsed_scope.start", "key.doc.column", "key.doc.comment", "key.bodyoffset", "key.nameoffset", "key.doc.full_as_xml", "key.offset", "key.fully_annotated_decl", "key.length", "key.bodylength", "key.namelength", "key.annotated_decl", "key.doc.parameters", "key.elements", "key.related_decls")
 
   for usr in persistedApiNames {
     let oldApi = oldApiNameNodeMap[usr]!
@@ -188,6 +188,7 @@ func prettyString(forKind kind: String) -> String {
     "sourcekitten.source.lang.objc.decl.field": "field",
 
     // Swift
+    "source.lang.swift.decl.function.method.static": "static method",
     "source.lang.swift.decl.function.method.instance": "method",
     "source.lang.swift.decl.var.instance": "var",
     "source.lang.swift.decl.class": "class",
@@ -195,7 +196,8 @@ func prettyString(forKind kind: String) -> String {
     "source.lang.swift.decl.enum": "enum",
     "source.lang.swift.decl.function.free": "function",
     "source.lang.swift.decl.var.global": "global var",
-    "source.lang.swift.decl.protocol": "protocol"
+    "source.lang.swift.decl.protocol": "protocol",
+    "source.lang.swift.decl.enumelement": "enum value"
     ][kind] {
     return pretty
   }
@@ -204,8 +206,10 @@ func prettyString(forKind kind: String) -> String {
 
 func prettyString(forModificationKind kind: String) -> String {
   switch kind {
-  case "key.swift_declaration": return "swift declaration"
-  case "key.parsed_declaration": return "declaration"
+  case "key.swift_declaration": return "Swift declaration"
+  case "key.parsed_declaration": return "Declaration"
+  case "key.doc.declaration": return "Declaration"
+  case "key.typename": return "Declaration"
   default: return kind
   }
 }
