@@ -225,8 +225,8 @@ func rootName(forApi api: APINode, apis: ApiNameNodeMap) -> String {
 
 func prettyName(forApi api: APINode, apis: ApiNameNodeMap) -> String {
   let name = api["key.name"] as! String
-  if let parentUsr = api["parent.usr"] as? String {
-    return "`\(name)` in \(prettyName(forApi: apis[parentUsr]!, apis: apis))"
+  if let parentUsr = api["parent.usr"] as? String, let parentApi = apis[parentUsr] {
+    return "`\(name)` in \(prettyName(forApi: parentApi, apis: apis))"
   }
   return "`\(name)`"
 }
