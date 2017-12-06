@@ -62,7 +62,7 @@ apidiff_objc() {
 
   cd "$ROOT"
 
-  xcodebuild build -workspace apple/diffreport.xcworkspace/ -scheme diffreport -configuration Release -derivedDataPath build >> /dev/null
+  xcodebuild build -workspace apple/diffreport.xcworkspace/ -scheme diffreport -configuration Release -derivedDataPath build >> /dev/null 2>> "$ERROR_LOG"
 
   sourcekitten doc --objc "$OLD_PATH/$umbrella_header" -- -x objective-c -arch arm64 -isysroot $(xcrun --sdk iphoneos --show-sdk-path) -I $(pwd) 2>> "$ERROR_LOG" | sed "s:$escaped_old_path\\\\/::g" > "$TMP_PATH/old_apis"
   sourcekitten doc --objc "$NEW_PATH/$umbrella_header" -- -x objective-c -arch arm64 -isysroot $(xcrun --sdk iphoneos --show-sdk-path) -I $(pwd) 2>> "$ERROR_LOG" | sed "s:$escaped_new_path\\\\/::g" > "$TMP_PATH/new_apis"
