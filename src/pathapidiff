@@ -162,6 +162,6 @@ case "$ENGINE" in
   *)            usage ;;
 esac
 
-if [ -f "$ERROR_LOG" ]; then
+if [ -s "$ERROR_LOG" ]; then
   >&2 echo "stderr output is available in $ERROR_LOG"
 fi
