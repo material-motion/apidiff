@@ -210,6 +210,8 @@ func prettyString(forModificationKind kind: String) -> String {
   case "key.parsed_declaration": return "Declaration"
   case "key.doc.declaration": return "Declaration"
   case "key.typename": return "Declaration"
+  case "key.always_deprecated": return "Deprecation"
+  case "key.deprecation_message": return "Deprecation message"
   default: return kind
   }
 }
