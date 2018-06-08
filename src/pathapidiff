@@ -92,13 +92,13 @@ apidiff_swift() {
   fi
 
   if [ -d "$OLD_PATH/$workspace_path" ]; then
-    scheme_name=$(xcodebuild build -workspace "$OLD_PATH/$workspace_path" -list | grep "$module_name\\b" | tail -n +2)
+    scheme_name=$(xcodebuild build -workspace "$OLD_PATH/$workspace_path" -list | sed -e 's/^[[:space:]]*//' | grep -x "$module_name")
 
     if [[ -z "$scheme_name" ]]; then
       echo "Couldn't find scheme $module_name. Here's what we found:"
       xcodebuild build -workspace "$OLD_PATH/$workspace_path" -list
       echo "Filtering down gave us this list:"
-      xcodebuild build -workspace "$OLD_PATH/$workspace_path" -list | grep "$module_name\\b" | tail -n +2
+      xcodebuild build -workspace "$OLD_PATH/$workspace_path" -list | sed -e 's/^[[:space:]]*//' | grep -x "$module_name"
       exit 1
     fi
 
@@ -113,13 +113,13 @@ apidiff_swift() {
     popd >> /dev/null
   fi
 
-  scheme_name=$(xcodebuild build -workspace "$NEW_PATH/$workspace_path" -list | grep "$module_name\\b" | tail -n +2)
+  scheme_name=$(xcodebuild build -workspace "$NEW_PATH/$workspace_path" -list | sed -e 's/^[[:space:]]*//' | grep -x "$module_name")
 
   if [[ -z "$scheme_name" ]]; then
     echo "Couldn't find scheme $module_name. Here's what we found:"
     xcodebuild build -workspace "$NEW_PATH/$workspace_path" -list
     echo "Filtering down gave us this list:"
-    xcodebuild build -workspace "$NEW_PATH/$workspace_path" -list | grep "$module_name\\b" | tail -n +2
+    xcodebuild build -workspace "$NEW_PATH/$workspace_path" -list | sed -e 's/^[[:space:]]*//' | grep -x "$module_name"
     exit 1
   fi
 

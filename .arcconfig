@@ -14,7 +14,7 @@
   "unit.xcode": {
     "build": {
       "workspace": "apple/diffreport.xcworkspace",
-      "scheme": "UnitTests",
+      "scheme": "diffreportlib",
       "configuration": "Debug",
       "destination": "platform=macOS"
     },

@@ -20,6 +20,14 @@ import XCTest
 // These tests require sourcekitten to be installed as a command line tool.
 // brew install sourcekitten
 class UnitTests: XCTestCase {
+  
+  static var allTests = [
+    ("testNoChanges", testNoChanges),
+    ("testAddition", testAddition),
+    ("testDeletion", testDeletion),
+    ("testModification", testModification),
+  ]
+  
   func testNoChanges() throws {
     let report = try generateReport(forOld: "@interface TestObject\n@end", new: "@interface TestObject\n@end")
     XCTAssertEqual(report.count, 0)
@@ -28,19 +36,19 @@ class UnitTests: XCTestCase {
   func testAddition() throws {
     let report = try generateReport(forOld: "", new: "@interface TestObject\n@end")
     XCTAssertEqual(report["TestObject"]!.count, 1)
-    XCTAssertEqual(report["TestObject"]!.first, ApiChange.Addition(apiType: "class", name: "`TestObject`"))
+    XCTAssertEqual(report["TestObject"]!.first, ApiChange.addition(apiType: "class", name: "`TestObject`"))
   }
 
   func testDeletion() throws {
     let report = try generateReport(forOld: "@interface TestObject\n@end", new: "")
     XCTAssertEqual(report["TestObject"]!.count, 1)
-    XCTAssertEqual(report["TestObject"]!.first, ApiChange.Deletion(apiType: "class", name: "`TestObject`"))
+    XCTAssertEqual(report["TestObject"]!.first, ApiChange.deletion(apiType: "class", name: "`TestObject`"))
   }
 
   func testModification() throws {
     let report = try generateReport(forOld: "/** Docs */\n@interface TestObject\n\n@property(nonatomic) id object;\n\n@end", new: "/** Docs */\n@interface TestObject\n\n@property(atomic) id object;\n\n@end")
     XCTAssertEqual(report["TestObject"]!.count, 1)
-    XCTAssertEqual(report["TestObject"]!.first!, ApiChange.Modification(apiType: "property", name: "`object` in `TestObject`", modificationType: "Declaration", from: "@property(nonatomic) id object", to: "@property(atomic) id object"))
+    XCTAssertEqual(report["TestObject"]!.first!, ApiChange.modification(apiType: "property", name: "`object` in `TestObject`", modificationType: "Declaration", from: "@property(nonatomic) id object", to: "@property(atomic) id object"))
   }
 
   let oldPath = ProcessInfo.processInfo.environment["TMPDIR"]!.appending("old/Header.h")

@@ -24,9 +24,9 @@ typealias ApiNameNodeMap = [String: APINode]
 
 /** A type of API change. */
 public enum ApiChange {
-  case Addition(apiType: String, name: String)
-  case Deletion(apiType: String, name: String)
-  case Modification(apiType: String, name: String, modificationType: String, from: String, to: String)
+  case addition(apiType: String, name: String)
+  case deletion(apiType: String, name: String)
+  case modification(apiType: String, name: String, modificationType: String, from: String, to: String)
 }
 
 /** Generates an API diff report from two SourceKitten JSON outputs. */
@@ -49,7 +49,7 @@ public func diffreport(oldApi: JSONObject, newApi: JSONObject) throws -> [String
     let apiType = prettyString(forKind: usr["key.kind"] as! String)
     let name = prettyName(forApi: usr, apis: newApiNameNodeMap)
     let root = rootName(forApi: usr, apis: newApiNameNodeMap)
-    changes[root, withDefault: []].append(.Addition(apiType: apiType, name: name))
+    changes[root, withDefault: []].append(.addition(apiType: apiType, name: name))
   }
 
   // Deletions
@@ -58,7 +58,7 @@ public func diffreport(oldApi: JSONObject, newApi: JSONObject) throws -> [String
     let apiType = prettyString(forKind: usr["key.kind"] as! String)
     let name = prettyName(forApi: usr, apis: oldApiNameNodeMap)
     let root = rootName(forApi: usr, apis: oldApiNameNodeMap)
-    changes[root, withDefault: []].append(.Deletion(apiType: apiType, name: name))
+    changes[root, withDefault: []].append(.deletion(apiType: apiType, name: name))
   }
 
   // Modifications
@@ -79,7 +79,7 @@ public func diffreport(oldApi: JSONObject, newApi: JSONObject) throws -> [String
         let apiType = prettyString(forKind: newApi["key.kind"] as! String)
         let name = prettyName(forApi: newApi, apis: newApiNameNodeMap)
         let modificationType = prettyString(forModificationKind: key)
-        changes[root, withDefault: []].append(.Modification(apiType: apiType,
+        changes[root, withDefault: []].append(.modification(apiType: apiType,
                                                             name: name,
                                                             modificationType: modificationType,
                                                             from: oldValue,
@@ -94,11 +94,11 @@ public func diffreport(oldApi: JSONObject, newApi: JSONObject) throws -> [String
 extension ApiChange {
   public func toMarkdown() -> String {
     switch self {
-    case .Addition(let apiType, let name):
+    case .addition(let apiType, let name):
       return "*new* \(apiType): \(name)"
-    case .Deletion(let apiType, let name):
+    case .deletion(let apiType, let name):
       return "*removed* \(apiType): \(name)"
-    case .Modification(let apiType, let name, let modificationType, let from, let to):
+    case .modification(let apiType, let name, let modificationType, let from, let to):
       return [
         "*modified* \(apiType): \(name)",
         "",
@@ -115,12 +115,12 @@ extension ApiChange: Equatable {}
 
 public func == (left: ApiChange, right: ApiChange) -> Bool {
   switch (left, right) {
-  case (let .Addition(apiType, name), let .Addition(apiType2, name2)):
+  case (let .addition(apiType, name), let .addition(apiType2, name2)):
     return apiType == apiType2 && name == name2
-  case (let .Deletion(apiType, name), let .Deletion(apiType2, name2)):
+  case (let .deletion(apiType, name), let .deletion(apiType2, name2)):
     return apiType == apiType2 && name == name2
-  case (let .Modification(apiType, name, modificationType, from, to),
-        let .Modification(apiType2, name2, modificationType2, from2, to2)):
+  case (let .modification(apiType, name, modificationType, from, to),
+        let .modification(apiType2, name2, modificationType2, from2, to2)):
     return apiType == apiType2 && name == name2 && modificationType == modificationType2 && from == from2 && to == to2
   default:
     return false
