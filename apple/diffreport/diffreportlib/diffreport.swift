@@ -75,7 +75,9 @@ public func diffreport(oldApi: JSONObject, newApi: JSONObject) throws -> [String
       if ignoredKeys.contains(key) {
         continue
       }
-      if let oldValue = oldApi[key] as? String, let newValue = newApi[key] as? String, oldValue != newValue {
+      if let oldValue = oldApi[key] as? String,
+          let newValue = newApi[key] as? String,
+          oldValue != newValue {
         let apiType = prettyString(forKind: newApi["key.kind"] as! String)
         let name = prettyName(forApi: newApi, apis: newApiNameNodeMap)
         let modificationType = prettyString(forModificationKind: key)
@@ -84,6 +86,34 @@ public func diffreport(oldApi: JSONObject, newApi: JSONObject) throws -> [String
                                                             modificationType: modificationType,
                                                             from: oldValue,
                                                             to: newValue))
+      }
+      if let oldValues = (oldApi[key] ?? []) as? [String],
+          let newValues = (newApi[key] ?? []) as? [String],
+          !oldValues.isEmpty || !newValues.isEmpty {
+        let oldValuesSet = Set(oldValues)
+        let newValuesSet = Set(newValues)
+
+        let apiType = prettyString(forKind: newApi["key.kind"] as! String)
+        let name = prettyName(forApi: newApi, apis: newApiNameNodeMap)
+        let modificationType = prettyString(forModificationKind: key)
+
+        let addedValues = newValuesSet.subtracting(oldValuesSet)
+        for addedValue in addedValues {
+          changes[root, withDefault: []].append(.Modification(apiType: apiType,
+                                                              name: name,
+                                                              modificationType: modificationType,
+                                                              from: "",
+                                                              to: addedValue))
+        }
+
+        let deletedValues = oldValuesSet.subtracting(newValuesSet)
+        for deletedValue in deletedValues {
+          changes[root, withDefault: []].append(.Modification(apiType: apiType,
+                                                              name: name,
+                                                              modificationType: modificationType,
+                                                              from: deletedValue,
+                                                              to: ""))
+        }
       }
     }
   }
@@ -99,14 +129,24 @@ extension ApiChange {
     case .Deletion(let apiType, let name):
       return "*removed* \(apiType): \(name)"
     case .Modification(let apiType, let name, let modificationType, let from, let to):
-      return [
-        "*modified* \(apiType): \(name)",
-        "",
-        "| Type of change: | \(modificationType) |",
-        "|---|---|",
-        "| From: | `\(from.replacingOccurrences(of: "\n", with: " "))` |",
-        "| To: | `\(to.replacingOccurrences(of: "\n", with: " "))` |"
-      ].joined(separator: "\n")
+      switch modificationType {
+      case "key.annotations":
+        if to.isEmpty {
+          return "The following annotation was *removed* from \(apiType) \(name):\n\n> \(from)"
+        } else if from.isEmpty {
+          return "The following annotation was *added* to \(apiType) \(name):\n\n> \(to)"
+        }
+        fallthrough
+      default:
+        return [
+          "*modified* \(apiType): \(name)",
+          "",
+          "| Type of change: | \(modificationType) |",
+          "|---|---|",
+          "| From: | `\(from.replacingOccurrences(of: "\n", with: " "))` |",
+          "| To: | `\(to.replacingOccurrences(of: "\n", with: " "))` |"
+          ].joined(separator: "\n")
+      }
     }
   }
 }
@@ -238,7 +278,7 @@ func apiNode(from sourceKittenNode: SourceKittenNode) -> APINode {
   var data = sourceKittenNode
   data.removeValue(forKey: "key.substructure")
   for (key, value) in data {
-    data[key] = String(describing: value)
+    data[key] = value
   }
   return data
 }
