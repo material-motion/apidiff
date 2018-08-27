@@ -29,26 +29,76 @@ class UnitTests: XCTestCase {
   ]
   
   func testNoChanges() throws {
-    let report = try generateReport(forOld: "@interface TestObject\n@end", new: "@interface TestObject\n@end")
+    let report = try generateReport(forOld: """
+@interface TestObject
+@end
+""",
+                                    new: """
+@interface TestObject
+@end
+""")
     XCTAssertEqual(report.count, 0)
   }
 
   func testAddition() throws {
-    let report = try generateReport(forOld: "", new: "@interface TestObject\n@end")
+    let report = try generateReport(forOld: """
+""", new: """
+@interface TestObject
+@end
+""")
     XCTAssertEqual(report["TestObject"]!.count, 1)
     XCTAssertEqual(report["TestObject"]!.first, ApiChange.addition(apiType: "class", name: "`TestObject`"))
   }
 
   func testDeletion() throws {
-    let report = try generateReport(forOld: "@interface TestObject\n@end", new: "")
+    let report = try generateReport(forOld: """
+@interface TestObject
+@end
+""", new: """
+""")
     XCTAssertEqual(report["TestObject"]!.count, 1)
     XCTAssertEqual(report["TestObject"]!.first, ApiChange.deletion(apiType: "class", name: "`TestObject`"))
   }
 
   func testModification() throws {
-    let report = try generateReport(forOld: "/** Docs */\n@interface TestObject\n\n@property(nonatomic) id object;\n\n@end", new: "/** Docs */\n@interface TestObject\n\n@property(atomic) id object;\n\n@end")
+    let report = try generateReport(forOld: """
+/** Docs */
+@interface TestObject
+
+@property(nonatomic) id object;
+
+@end
+""", new: """
+/** Docs */
+@interface TestObject
+
+@property(atomic) id object;
+
+@end
+""")
     XCTAssertEqual(report["TestObject"]!.count, 1)
-    XCTAssertEqual(report["TestObject"]!.first!, ApiChange.modification(apiType: "property", name: "`object` in `TestObject`", modificationType: "Declaration", from: "@property(nonatomic) id object", to: "@property(atomic) id object"))
+    XCTAssertEqual(report["TestObject"]!.first!,
+                   ApiChange.modification(apiType: "property",
+                                          name: "`object` in `TestObject`",
+                                          modificationType: "Declaration",
+                                          from: "@property(nonatomic) id object",
+                                          to: "@property(atomic) id object"))
+  }
+
+  func testNewPropertyOnClass() throws {
+    let report = try generateReport(forOld: """
+@interface MDCAlertControllerView
+@end
+""",
+                                    new: """
+@interface MDCAlertControllerView
+@property(nonatomic, strong, nullable) id buttonInkColor;
+@end
+""")
+    XCTAssertEqual(report["MDCAlertControllerView"]!.count, 1)
+    XCTAssertEqual(report["MDCAlertControllerView"]!.first!,
+                   .addition(apiType: "property",
+                             name: "`buttonInkColor` in `MDCAlertControllerView`"))
   }
 
   let oldPath = ProcessInfo.processInfo.environment["TMPDIR"]!.appending("old/Header.h")
@@ -71,3 +121,4 @@ class UnitTests: XCTestCase {
     return try diffreport(oldApi: oldApi, newApi: newApi)
   }
 }
+

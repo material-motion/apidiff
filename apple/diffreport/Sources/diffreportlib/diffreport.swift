@@ -79,6 +79,11 @@ public func diffreport(oldApi: JSONObject, newApi: JSONObject) throws -> [String
         let apiType = prettyString(forKind: newApi["key.kind"] as! String)
         let name = prettyName(forApi: newApi, apis: newApiNameNodeMap)
         let modificationType = prettyString(forModificationKind: key)
+        if apiType == "class" && key == "key.parsed_declaration" {
+          // Ignore declarations for classes because it's a complete representation of the class's
+          // code, which is not helpful diff information.
+          continue
+        }
         changes[root, withDefault: []].append(.modification(apiType: apiType,
                                                             name: name,
                                                             modificationType: modificationType,
