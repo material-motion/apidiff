@@ -62,12 +62,12 @@ apidiff_objc() {
 
   cd "$ROOT"
 
-  xcodebuild build -workspace apple/diffreport.xcworkspace/ -scheme diffreport -configuration Release -derivedDataPath build >> /dev/null 2>> "$ERROR_LOG"
-
   sourcekitten doc --objc "$OLD_PATH/$umbrella_header" -- -x objective-c -arch arm64 -isysroot $(xcrun --sdk iphoneos --show-sdk-path) -I $(pwd) 2>> "$ERROR_LOG" | sed "s:$escaped_old_path\\\\/::g" > "$TMP_PATH/old_apis"
   sourcekitten doc --objc "$NEW_PATH/$umbrella_header" -- -x objective-c -arch arm64 -isysroot $(xcrun --sdk iphoneos --show-sdk-path) -I $(pwd) 2>> "$ERROR_LOG" | sed "s:$escaped_new_path\\\\/::g" > "$TMP_PATH/new_apis"
 
-  build/Build/Products/Release/diffreport.app/Contents/MacOS/diffreport "$TMP_PATH/old_apis" "$TMP_PATH/new_apis" 2>> "$ERROR_LOG"
+  pushd apple/diffreport > /dev/null
+  swift run diffreport "$TMP_PATH/old_apis" "$TMP_PATH/new_apis" 2>> "$ERROR_LOG"
+  popd > /dev/null
 }
 
 apidiff_swift() {
@@ -83,7 +83,6 @@ apidiff_swift() {
   escaped_new_path=$(echo "$NEW_PATH" | sed "s:/:\\\\\\\\/:g")
 
   cd "$ROOT"
-  xcodebuild build -workspace apple/diffreport.xcworkspace/ -scheme diffreport -configuration Release -derivedDataPath build >> /dev/null
 
   if [ -f "$OLD_PATH/Podfile" ]; then
     pushd "$OLD_PATH" >> /dev/null
@@ -125,7 +124,9 @@ apidiff_swift() {
 
   sourcekitten doc --module-name "$module_name" -- -workspace "$NEW_PATH/$workspace_path" -scheme ""$scheme_name"" 2>> "$ERROR_LOG" | sed "s:$escaped_new_path\\\\/::g" > "$TMP_PATH/new_apis"
 
-  build/Build/Products/Release/diffreport.app/Contents/MacOS/diffreport "$TMP_PATH/old_apis" "$TMP_PATH/new_apis"
+  pushd apple/diffreport > /dev/null
+  swift run diffreport "$TMP_PATH/old_apis" "$TMP_PATH/new_apis" 2>> "$ERROR_LOG"
+  popd > /dev/null
 }
 
 apidiff_java() {
