@@ -66,6 +66,7 @@ apidiff_objc() {
   sourcekitten doc --objc "$NEW_PATH/$umbrella_header" -- -x objective-c -arch arm64 -isysroot $(xcrun --sdk iphoneos --show-sdk-path) -I $(pwd) 2>> "$ERROR_LOG" | sed "s:$escaped_new_path\\\\/::g" > "$TMP_PATH/new_apis"
 
   pushd apple/diffreport > /dev/null
+  swift build > /dev/null 2>> "$ERROR_LOG"
   swift run diffreport "$TMP_PATH/old_apis" "$TMP_PATH/new_apis" 2>> "$ERROR_LOG"
   popd > /dev/null
 }
@@ -125,6 +126,7 @@ apidiff_swift() {
   sourcekitten doc --module-name "$module_name" -- -workspace "$NEW_PATH/$workspace_path" -scheme ""$scheme_name"" 2>> "$ERROR_LOG" | sed "s:$escaped_new_path\\\\/::g" > "$TMP_PATH/new_apis"
 
   pushd apple/diffreport > /dev/null
+  swift build > /dev/null 2>> "$ERROR_LOG"
   swift run diffreport "$TMP_PATH/old_apis" "$TMP_PATH/new_apis" 2>> "$ERROR_LOG"
   popd > /dev/null
 }
