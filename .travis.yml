@@ -5,11 +5,10 @@ notifications:
   email: false
 before_install:
   - gem install xcpretty --no-rdoc --no-ri --no-document --quiet
+  - brew install sourcekitten
 script:
   - set -o pipefail
   - cd apple/diffreport
-  - swift package generate-xcodeproj
-  - cd ../../
-  - xcodebuild -workspace "apple/diffreport.xcworkspace" -scheme "diffreportlib" -configuration "Debug" -destination "platform=macOS" -enableCodeCoverage "YES" test | xcpretty
+  - swift test
 after_success:
   - bash <(curl -s https://codecov.io/bash)
